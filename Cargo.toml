@@ -1,0 +1,23 @@
+[package]
+name = "lazy-lru"
+version = "0.1.0"
+edition = "2021"
+authors = ["Behzad Nouri <behzadnouri@gmail.com>"]
+categories = ["caching", "no-std"]
+description = "A least-recently-used (LRU) cache implementation with lazy eviction"
+homepage = "https://github.com/behzadnouri/lazy-lru"
+repository = "https://github.com/jeromefroe/lazy-lru.git"
+documentation = "https://docs.rs/lazy-lru/"
+readme = "README.md"
+license = "MIT"
+keywords = ["LRU", "cache"]
+
+[dependencies]
+hashbrown = { version = "0.14.3" }
+
+[dev-dependencies]
+lru = "0.12.3"
+rand = "0.8.5"
+
+[[bench]]
+name = "benches"
