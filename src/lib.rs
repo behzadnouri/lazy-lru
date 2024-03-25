@@ -206,6 +206,24 @@ impl<K: Eq + Hash + PartialEq, V> LruCache<K, V> {
             .map(|(key, (_, value))| (key, value))
     }
 
+    /// Synonym for `remove`.
+    pub fn pop<Q>(&mut self, key: &Q) -> Option<V>
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq + ?Sized,
+    {
+        self.remove(key)
+    }
+
+    /// Synonym for `remove_entry`.
+    pub fn pop_entry<Q>(&mut self, key: &Q) -> Option<(K, V)>
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq + ?Sized,
+    {
+        self.remove_entry(key)
+    }
+
     /// Returns the number of elements in the cache.
     pub fn len(&self) -> usize {
         self.cache.len()
