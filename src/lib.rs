@@ -5,6 +5,7 @@ use {
         borrow::Borrow,
         cmp::Reverse,
         hash::Hash,
+        iter::FusedIterator,
         sync::atomic::{AtomicU64, Ordering},
     },
     hashbrown::HashMap,
@@ -18,11 +19,32 @@ extern crate alloc;
 /// specified capacity with no evictions, at which point, the excess entries
 /// are evicted based on LRU policy resulting in an _amortized_ `O(1)`
 /// performance.
+#[derive(Debug)]
 pub struct LruCache<K, V> {
     cache: HashMap<K, (/*ordinal:*/ AtomicU64, V)>,
     counter: AtomicU64,
     capacity: usize,
 }
+
+/// An iterator over the entries of an LruCache.
+/// This `struct` is created by the [`iter`] method on [`LruCache`].
+///
+/// [`iter`]: LruCache::iter
+#[derive(Clone)]
+pub struct Iter<'a, K: 'a, V: 'a>(hashbrown::hash_map::Iter<'a, K, (AtomicU64, V)>);
+
+/// A mutable iterator over the entries of an LruCache.
+/// This `struct` is created by the [`iter_mut`] method on [`LruCache`].
+///
+/// [`iter_mut`]: LruCache::iter_mut
+pub struct IterMut<'a, K: 'a, V: 'a>(hashbrown::hash_map::IterMut<'a, K, (AtomicU64, V)>);
+
+/// An owning iterator over the entries of an LruCache.
+/// This `struct` is created by the [`into_iter`] method on [`LruCache`]
+/// (provided by the [`IntoIterator`] trait). See its documentation for more.
+///
+/// [`into_iter`]: IntoIterator::into_iter
+pub struct IntoIter<K, V>(hashbrown::hash_map::IntoIter<K, (AtomicU64, V)>);
 
 impl<K, V> LruCache<K, V> {
     pub fn new(capacity: usize) -> LruCache<K, V> {
@@ -31,6 +53,19 @@ impl<K, V> LruCache<K, V> {
             counter: AtomicU64::default(),
             capacity,
         }
+    }
+
+    /// An iterator visiting all key-value pairs in arbitrary order.
+    /// The iterator element type is (&'a K, &'a V).
+    pub fn iter(&self) -> Iter<'_, K, V> {
+        Iter(self.cache.iter())
+    }
+
+    /// An iterator visiting all key-value pairs in arbitrary order, with
+    /// mutable references to the values.
+    /// The iterator element type is (&'a K, &'a mut V).
+    pub fn iter_mut(&mut self) -> IterMut<'_, K, V> {
+        IterMut(self.cache.iter_mut())
     }
 }
 
@@ -250,6 +285,141 @@ impl<K: Eq + Hash + PartialEq, V> LruCache<K, V> {
         self.cache.retain(|key, (_, value)| f(key, value));
     }
 }
+
+impl<'a, K, V> IntoIterator for &'a LruCache<K, V> {
+    type Item = (&'a K, &'a V);
+    type IntoIter = Iter<'a, K, V>;
+
+    #[inline]
+    fn into_iter(self) -> Iter<'a, K, V> {
+        self.iter()
+    }
+}
+
+impl<'a, K, V> IntoIterator for &'a mut LruCache<K, V> {
+    type Item = (&'a K, &'a mut V);
+    type IntoIter = IterMut<'a, K, V>;
+
+    #[inline]
+    fn into_iter(self) -> IterMut<'a, K, V> {
+        self.iter_mut()
+    }
+}
+
+impl<K, V> IntoIterator for LruCache<K, V> {
+    type Item = (K, V);
+    type IntoIter = IntoIter<K, V>;
+
+    #[inline]
+    fn into_iter(self) -> IntoIter<K, V> {
+        IntoIter(self.cache.into_iter())
+    }
+}
+
+impl<'a, K, V> Iterator for Iter<'a, K, V> {
+    type Item = (&'a K, &'a V);
+
+    #[inline]
+    fn next(&mut self) -> Option<(&'a K, &'a V)> {
+        self.0.next().map(|(key, (_, value))| (key, value))
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.0.size_hint()
+    }
+
+    #[inline]
+    fn fold<B, F>(self, init: B, mut f: F) -> B
+    where
+        Self: Sized,
+        F: FnMut(B, Self::Item) -> B,
+    {
+        self.0.fold(init, |acc, entry| {
+            let (key, (_, value)) = entry;
+            f(acc, (key, value))
+        })
+    }
+}
+
+impl<K, V> ExactSizeIterator for Iter<'_, K, V> {
+    #[inline]
+    fn len(&self) -> usize {
+        self.0.len()
+    }
+}
+
+impl<K, V> FusedIterator for Iter<'_, K, V> {}
+
+impl<'a, K, V> Iterator for IterMut<'a, K, V> {
+    type Item = (&'a K, &'a mut V);
+
+    #[inline]
+    fn next(&mut self) -> Option<(&'a K, &'a mut V)> {
+        self.0.next().map(|(key, (_, value))| (key, value))
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.0.size_hint()
+    }
+
+    #[inline]
+    fn fold<B, F>(self, init: B, mut f: F) -> B
+    where
+        Self: Sized,
+        F: FnMut(B, Self::Item) -> B,
+    {
+        self.0.fold(init, |acc, entry| {
+            let (key, (_, value)) = entry;
+            f(acc, (key, value))
+        })
+    }
+}
+
+impl<K, V> ExactSizeIterator for IterMut<'_, K, V> {
+    #[inline]
+    fn len(&self) -> usize {
+        self.0.len()
+    }
+}
+
+impl<K, V> FusedIterator for IterMut<'_, K, V> {}
+
+impl<K, V> Iterator for IntoIter<K, V> {
+    type Item = (K, V);
+
+    #[inline]
+    fn next(&mut self) -> Option<(K, V)> {
+        self.0.next().map(|(key, (_, value))| (key, value))
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.0.size_hint()
+    }
+
+    #[inline]
+    fn fold<B, F>(self, init: B, mut f: F) -> B
+    where
+        Self: Sized,
+        F: FnMut(B, Self::Item) -> B,
+    {
+        self.0.fold(init, |acc, entry| {
+            let (key, (_, value)) = entry;
+            f(acc, (key, value))
+        })
+    }
+}
+
+impl<K, V> ExactSizeIterator for IntoIter<K, V> {
+    #[inline]
+    fn len(&self) -> usize {
+        self.0.len()
+    }
+}
+
+impl<K, V> FusedIterator for IntoIter<K, V> {}
 
 #[cfg(test)]
 mod tests {
