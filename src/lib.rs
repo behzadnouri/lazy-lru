@@ -296,6 +296,24 @@ impl<K: Eq + Hash + PartialEq, V> LruCache<K, V> {
     }
 }
 
+impl<K: Clone + Eq + Hash + PartialEq, V: Clone> LruCache<K, V> {
+    /// Clones the LruCache.
+    ///
+    /// Note `&mut self` is necessary to prevent interior mutation from
+    /// concurrent access while the cache is cloned.
+    pub fn clone(&mut self) -> Self {
+        let cache = self.cache.iter().map(|(key, (ordinal, value))| {
+            let ordinal = AtomicU64::new(ordinal.load(Ordering::Relaxed));
+            (key.clone(), (ordinal, value.clone()))
+        });
+        Self {
+            cache: cache.collect(),
+            counter: AtomicU64::new(self.counter.load(Ordering::Relaxed)),
+            ..*self
+        }
+    }
+}
+
 impl<'a, K, V> IntoIterator for &'a LruCache<K, V> {
     type Item = (&'a K, &'a V);
     type IntoIter = Iter<'a, K, V>;
