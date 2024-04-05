@@ -108,7 +108,10 @@ impl<K: Eq + Hash + PartialEq, V> LruCache<K, V> {
         );
     }
 
-    /// Returns true if the map contains a value for the specified key.
+    /// Returns true if the cache contains a value for the specified key.
+    /// Unlike `cache.get(key).is_some()`, this method does _not_ update the
+    /// LRU ordinal value associated with the entry.
+    ///
     /// The key may be any borrowed form of the cache's key type, but `Hash`
     /// and `Eq` on the borrowed form must match those for the key type.
     pub fn contains_key<Q>(&self, key: &Q) -> bool
@@ -120,7 +123,8 @@ impl<K: Eq + Hash + PartialEq, V> LruCache<K, V> {
     }
 
     /// Returns a reference to the value corresponding to the key.
-    /// Updates the ordinal value associated with the entry.
+    /// Updates the LRU ordinal value associated with the entry.
+    ///
     /// The key may be any borrowed form of the cache's key type, but `Hash`
     /// and `Eq` on the borrowed form must match those for the key type.
     pub fn get<Q>(&self, key: &Q) -> Option<&V>
@@ -139,7 +143,8 @@ impl<K: Eq + Hash + PartialEq, V> LruCache<K, V> {
     }
 
     /// Returns a mutable reference to the value corresponding to the key.
-    /// Updates the ordinal value associated with the entry.
+    /// Updates the LRU ordinal value associated with the entry.
+    ///
     /// The key may be any borrowed form of the cache's key type, but `Hash`
     /// and `Eq` on the borrowed form must match those for the key type.
     pub fn get_mut<Q>(&mut self, key: &Q) -> Option<&mut V>
@@ -158,7 +163,8 @@ impl<K: Eq + Hash + PartialEq, V> LruCache<K, V> {
     }
 
     /// Returns the key-value pair corresponding to the supplied key.
-    /// Updates the ordinal value associated with the entry.
+    /// Updates the LRU ordinal value associated with the entry.
+    ///
     /// The supplied key may be any borrowed form of the cache's key type, but
     /// `Hash` and `Eq` on the borrowed form must match those for the key type.
     pub fn get_key_value<Q>(&self, key: &Q) -> Option<(&K, &V)>
@@ -177,8 +183,8 @@ impl<K: Eq + Hash + PartialEq, V> LruCache<K, V> {
     }
 
     /// Returns a reference to the value corresponding to the key.
-    /// Unlike `get`, `peek` does _not_ updates the ordinal value associated
-    /// with the entry.
+    /// Unlike `get`, `peek` does _not_ updates the LRU ordinal value
+    /// associated with the entry.
     pub fn peek<Q>(&self, key: &Q) -> Option<&V>
     where
         K: Borrow<Q>,
@@ -188,8 +194,9 @@ impl<K: Eq + Hash + PartialEq, V> LruCache<K, V> {
     }
 
     /// Returns a mutable reference to the value corresponding to the key.
-    /// Unlike `get_mut`, `peek_mut` does _not_ updates the ordinal value
+    /// Unlike `get_mut`, `peek_mut` does _not_ updates the LRU ordinal value
     /// associated with the entry.
+    ///
     /// The key may be any borrowed form of the cache's key type, but `Hash`
     /// and `Eq` on the borrowed form must match those for the key type.
     pub fn peek_mut<Q>(&mut self, key: &Q) -> Option<&mut V>
@@ -203,6 +210,7 @@ impl<K: Eq + Hash + PartialEq, V> LruCache<K, V> {
     /// Returns the key-value pair corresponding to the supplied key.
     /// Unlike `get_key_value`, `peek_key_value` does _not_ updates the ordinal
     /// value associated with the entry.
+    ///
     /// The supplied key may be any borrowed form of the cache's key type, but
     /// `Hash` and `Eq` on the borrowed form must match those for the key type.
     pub fn peek_key_value<Q>(&self, key: &Q) -> Option<(&K, &V)>
@@ -217,6 +225,7 @@ impl<K: Eq + Hash + PartialEq, V> LruCache<K, V> {
 
     /// Removes a key from the cache, returning the value at the key if the key
     /// was previously in the cache.
+    ///
     /// The key may be any borrowed form of the cache's key type, but `Hash`
     /// and `Eq` on the borrowed form must match those for the key type.
     pub fn remove<Q>(&mut self, key: &Q) -> Option<V>
@@ -229,6 +238,7 @@ impl<K: Eq + Hash + PartialEq, V> LruCache<K, V> {
 
     /// Removes a key from the cache, returning the stored key and value if the
     /// key was previously in the cache.
+    ///
     /// The key may be any borrowed form of the cache's key type, but `Hash`
     /// and `Eq` on the borrowed form must match those for the key type.
     pub fn remove_entry<Q>(&mut self, key: &Q) -> Option<(K, V)>
