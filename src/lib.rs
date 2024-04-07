@@ -26,20 +26,20 @@ pub struct LruCache<K, V> {
     capacity: usize,
 }
 
-/// An iterator over the entries of an LruCache.
+/// An iterator over the entries of an `LruCache`.
 /// This `struct` is created by the [`iter`] method on [`LruCache`].
 ///
 /// [`iter`]: LruCache::iter
 #[derive(Clone)]
 pub struct Iter<'a, K: 'a, V: 'a>(hashbrown::hash_map::Iter<'a, K, (AtomicU64, V)>);
 
-/// A mutable iterator over the entries of an LruCache.
+/// A mutable iterator over the entries of an `LruCache`.
 /// This `struct` is created by the [`iter_mut`] method on [`LruCache`].
 ///
 /// [`iter_mut`]: LruCache::iter_mut
 pub struct IterMut<'a, K: 'a, V: 'a>(hashbrown::hash_map::IterMut<'a, K, (AtomicU64, V)>);
 
-/// An owning iterator over the entries of an LruCache.
+/// An owning iterator over the entries of an `LruCache`.
 /// This `struct` is created by the [`into_iter`] method on [`LruCache`]
 /// (provided by the [`IntoIterator`] trait). See its documentation for more.
 ///
@@ -56,25 +56,25 @@ impl<K, V> LruCache<K, V> {
     }
 
     /// An iterator visiting all key-value pairs in arbitrary order.
-    /// The iterator element type is (&'a K, &'a V).
+    /// The iterator element type is `(&'a K, &'a V)`.
     pub fn iter(&self) -> Iter<'_, K, V> {
         Iter(self.cache.iter())
     }
 
     /// An iterator visiting all key-value pairs in arbitrary order, with
     /// mutable references to the values.
-    /// The iterator element type is (&'a K, &'a mut V).
+    /// The iterator element type is `(&'a K, &'a mut V)`.
     pub fn iter_mut(&mut self) -> IterMut<'_, K, V> {
         IterMut(self.cache.iter_mut())
     }
 }
 
 impl<K: Eq + Hash + PartialEq, V> LruCache<K, V> {
-    // Inserts a key-value pair into the cache.
-    // If the cache not have this key present, None is returned.
-    // If the cache did have this key present, the value is updated, and the
-    // old value is returned. The key is not updated, though; this matters for
-    // types that can be == without being identical.
+    /// Inserts a key-value pair into the cache.
+    /// If the cache not have this key present, None is returned.
+    /// If the cache did have this key present, the value is updated, and the
+    /// old value is returned. The key is not updated, though; this matters for
+    /// types that can be `==` without being identical.
     pub fn put(&mut self, key: K, value: V) -> Option<V> {
         let ordinal = self.counter.fetch_add(1, Ordering::Relaxed);
         let old = self
@@ -109,7 +109,7 @@ impl<K: Eq + Hash + PartialEq, V> LruCache<K, V> {
     }
 
     /// Returns true if the cache contains a value for the specified key.
-    /// Unlike `cache.get(key).is_some()`, this method does _not_ update the
+    /// Unlike `self.get(key).is_some()`, this method does _not_ update the
     /// LRU ordinal value associated with the entry.
     ///
     /// The key may be any borrowed form of the cache's key type, but `Hash`
@@ -183,8 +183,10 @@ impl<K: Eq + Hash + PartialEq, V> LruCache<K, V> {
     }
 
     /// Returns a reference to the value corresponding to the key.
-    /// Unlike `get`, `peek` does _not_ updates the LRU ordinal value
+    /// Unlike [`get`], `peek` does _not_ updates the LRU ordinal value
     /// associated with the entry.
+    ///
+    /// [`get`]: LruCache::get
     pub fn peek<Q>(&self, key: &Q) -> Option<&V>
     where
         K: Borrow<Q>,
@@ -194,11 +196,13 @@ impl<K: Eq + Hash + PartialEq, V> LruCache<K, V> {
     }
 
     /// Returns a mutable reference to the value corresponding to the key.
-    /// Unlike `get_mut`, `peek_mut` does _not_ updates the LRU ordinal value
+    /// Unlike [`get_mut`], `peek_mut` does _not_ updates the LRU ordinal value
     /// associated with the entry.
     ///
     /// The key may be any borrowed form of the cache's key type, but `Hash`
     /// and `Eq` on the borrowed form must match those for the key type.
+    ///
+    /// [`get_mut`]: LruCache::get_mut
     pub fn peek_mut<Q>(&mut self, key: &Q) -> Option<&mut V>
     where
         K: Borrow<Q>,
@@ -208,11 +212,13 @@ impl<K: Eq + Hash + PartialEq, V> LruCache<K, V> {
     }
 
     /// Returns the key-value pair corresponding to the supplied key.
-    /// Unlike `get_key_value`, `peek_key_value` does _not_ updates the ordinal
-    /// value associated with the entry.
+    /// Unlike [`get_key_value`], `peek_key_value` does _not_ updates the
+    /// ordinal value associated with the entry.
     ///
     /// The supplied key may be any borrowed form of the cache's key type, but
     /// `Hash` and `Eq` on the borrowed form must match those for the key type.
+    ///
+    /// [`get_key_value`]: LruCache::get_key_value
     pub fn peek_key_value<Q>(&self, key: &Q) -> Option<(&K, &V)>
     where
         K: Borrow<Q>,
@@ -251,7 +257,9 @@ impl<K: Eq + Hash + PartialEq, V> LruCache<K, V> {
             .map(|(key, (_, value))| (key, value))
     }
 
-    /// Synonym for `remove`.
+    /// Synonym for [`remove`].
+    ///
+    /// [`remove`]: LruCache::remove
     pub fn pop<Q>(&mut self, key: &Q) -> Option<V>
     where
         K: Borrow<Q>,
@@ -260,7 +268,9 @@ impl<K: Eq + Hash + PartialEq, V> LruCache<K, V> {
         self.remove(key)
     }
 
-    /// Synonym for `remove_entry`.
+    /// Synonym for [`remove_entry`].
+    ///
+    /// [`remove_entry`]: LruCache::remove_entry
     pub fn pop_entry<Q>(&mut self, key: &Q) -> Option<(K, V)>
     where
         K: Borrow<Q>,
@@ -297,9 +307,9 @@ impl<K: Eq + Hash + PartialEq, V> LruCache<K, V> {
 }
 
 impl<K: Clone + Eq + Hash + PartialEq, V: Clone> LruCache<K, V> {
-    /// Clones the LruCache.
+    /// Clones the `LruCache`.
     ///
-    /// Note `&mut self` is necessary to prevent interior mutation from
+    /// Note: `&mut self` is necessary to prevent interior mutation from
     /// concurrent access while the cache is cloned.
     pub fn clone(&mut self) -> Self {
         let cache = self.cache.iter().map(|(key, (ordinal, value))| {
