@@ -461,7 +461,12 @@ impl<K, V> FusedIterator for IntoIter<K, V> {}
 
 #[cfg(test)]
 mod tests {
-    use {super::*, core::fmt::Debug};
+    use {
+        super::*,
+        core::{fmt::Debug, num::NonZeroUsize},
+        rand::Rng,
+        test_case::test_case,
+    };
 
     fn check_entry<K, V, Q: ?Sized>(cache: &LruCache<K, V>, key: &Q, ordinal: u64, value: V)
     where
@@ -542,5 +547,55 @@ mod tests {
 
         assert_eq!(cache.len(), 0);
         assert!(cache.is_empty());
+    }
+
+    #[test_case(10, 10)]
+    #[test_case(10, 100)]
+    #[test_case(10, 1_000)]
+    #[test_case(10, 10_000)]
+    #[test_case(100, 10)]
+    #[test_case(100, 100)]
+    #[test_case(100, 1_000)]
+    #[test_case(100, 10_000)]
+    fn test_lru_cache_cross_check_subset(capacity: usize, num_keys: usize) {
+        let mut rng = rand::thread_rng();
+        let mut cache = LruCache::<usize, u8>::new(capacity);
+        let mut other = lru::LruCache::<usize, u8>::new(NonZeroUsize::new(capacity).unwrap());
+        for _ in 0..10_000_000 {
+            let key: usize = rng.gen_range(0..num_keys);
+            if rng.gen_ratio(1, 2) {
+                let val = other.get(&key);
+                assert!(val.is_none() || cache.get(&key) == val);
+            } else {
+                let val = rng.gen();
+                let old = other.put(key, val);
+                assert!(cache.put(key, val) == old || old.is_none());
+            }
+        }
+    }
+
+    #[test_case(10, 10)]
+    #[test_case(10, 100)]
+    #[test_case(10, 1_000)]
+    #[test_case(10, 10_000)]
+    #[test_case(100, 10)]
+    #[test_case(100, 100)]
+    #[test_case(100, 1_000)]
+    #[test_case(100, 10_000)]
+    fn test_lru_cache_cross_check_superset(capacity: usize, num_keys: usize) {
+        let mut rng = rand::thread_rng();
+        let mut cache = LruCache::<usize, u8>::new(capacity);
+        let mut other = lru::LruCache::<usize, u8>::new(NonZeroUsize::new(2 * capacity).unwrap());
+        for _ in 0..10_000_000 {
+            let key: usize = rng.gen_range(0..num_keys);
+            if rng.gen_ratio(1, 2) {
+                let val = cache.get(&key);
+                assert!(val.is_none() || other.get(&key) == val);
+            } else {
+                let val = rng.gen();
+                let old = cache.put(key, val);
+                assert!(other.put(key, val) == old || old.is_none());
+            }
+        }
     }
 }

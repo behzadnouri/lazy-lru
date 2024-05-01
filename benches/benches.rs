@@ -10,7 +10,6 @@ use {core::num::NonZeroUsize, rand::Rng, test::Bencher};
 
 const REPS: usize = 1 << 10;
 const NUM_KEYS: usize = 1 << 20;
-// const CAPACITY: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(1 << 17) };
 const CAPACITY: usize = 1 << 17;
 
 macro_rules! impl_put_bench {
