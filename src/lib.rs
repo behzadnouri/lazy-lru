@@ -55,6 +55,14 @@ impl<K, V> LruCache<K, V> {
         }
     }
 
+    pub fn new_no_alloc(capacity: usize) -> LruCache<K, V> {
+        Self {
+            cache: Default::default(),
+            counter: AtomicU64::default(),
+            capacity,
+        }
+    }
+
     /// An iterator visiting all key-value pairs in arbitrary order.
     /// The iterator element type is `(&'a K, &'a V)`.
     pub fn iter(&self) -> Iter<'_, K, V> {
