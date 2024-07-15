@@ -23,7 +23,7 @@ extern crate alloc;
 pub struct LruCache<K, V> {
     cache: HashMap<K, (/*ordinal:*/ AtomicU64, V)>,
     counter: AtomicU64,
-    capacity: usize,
+    pub capacity: usize,
 }
 
 /// An iterator over the entries of an `LruCache`.
