@@ -1,6 +1,6 @@
 [package]
 name = "lazy-lru"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 authors = ["Behzad Nouri <behzadnouri@gmail.com>"]
 categories = ["caching", "no-std"]
