@@ -23,7 +23,7 @@ extern crate alloc;
 pub struct LruCache<K, V> {
     cache: HashMap<K, (/*ordinal:*/ AtomicU64, V)>,
     counter: AtomicU64,
-    capacity: usize,
+    pub capacity: usize,
 }
 
 /// An iterator over the entries of an `LruCache`.
@@ -50,6 +50,14 @@ impl<K, V> LruCache<K, V> {
     pub fn new(capacity: usize) -> LruCache<K, V> {
         Self {
             cache: HashMap::with_capacity(capacity.saturating_mul(2)),
+            counter: AtomicU64::default(),
+            capacity,
+        }
+    }
+
+    pub fn new_no_alloc(capacity: usize) -> LruCache<K, V> {
+        Self {
+            cache: Default::default(),
             counter: AtomicU64::default(),
             capacity,
         }
