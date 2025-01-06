@@ -47,6 +47,7 @@ pub struct IterMut<'a, K: 'a, V: 'a>(hashbrown::hash_map::IterMut<'a, K, (Atomic
 pub struct IntoIter<K, V>(hashbrown::hash_map::IntoIter<K, (AtomicU64, V)>);
 
 impl<K, V> LruCache<K, V, DefaultHashBuilder> {
+    #[inline]
     pub fn new(capacity: usize) -> Self {
         Self {
             cache: HashMap::with_capacity(capacity.saturating_mul(2)),
@@ -75,6 +76,7 @@ impl<K, V, S> LruCache<K, V, S> {
 impl<K, V, S> LruCache<K, V, S> {
     /// An iterator visiting all key-value pairs in arbitrary order.
     /// The iterator element type is `(&'a K, &'a V)`.
+    #[inline]
     pub fn iter(&self) -> Iter<'_, K, V> {
         Iter(self.cache.iter())
     }
@@ -82,6 +84,7 @@ impl<K, V, S> LruCache<K, V, S> {
     /// An iterator visiting all key-value pairs in arbitrary order, with
     /// mutable references to the values.
     /// The iterator element type is `(&'a K, &'a mut V)`.
+    #[inline]
     pub fn iter_mut(&mut self) -> IterMut<'_, K, V> {
         IterMut(self.cache.iter_mut())
     }
@@ -93,6 +96,7 @@ impl<K: Eq + Hash + PartialEq, V, S: BuildHasher> LruCache<K, V, S> {
     /// If the cache did have this key present, the value is updated, and the
     /// old value is returned. The key is not updated, though; this matters for
     /// types that can be `==` without being identical.
+    #[inline]
     pub fn put(&mut self, key: K, value: V) -> Option<V> {
         let ordinal = self.counter.fetch_add(1, Ordering::Relaxed);
         let old = self
@@ -132,6 +136,7 @@ impl<K: Eq + Hash + PartialEq, V, S: BuildHasher> LruCache<K, V, S> {
     ///
     /// The key may be any borrowed form of the cache's key type, but `Hash`
     /// and `Eq` on the borrowed form must match those for the key type.
+    #[inline]
     pub fn contains_key<Q>(&self, key: &Q) -> bool
     where
         K: Borrow<Q>,
@@ -145,6 +150,7 @@ impl<K: Eq + Hash + PartialEq, V, S: BuildHasher> LruCache<K, V, S> {
     ///
     /// The key may be any borrowed form of the cache's key type, but `Hash`
     /// and `Eq` on the borrowed form must match those for the key type.
+    #[inline]
     pub fn get<Q>(&self, key: &Q) -> Option<&V>
     where
         K: Borrow<Q>,
@@ -165,6 +171,7 @@ impl<K: Eq + Hash + PartialEq, V, S: BuildHasher> LruCache<K, V, S> {
     ///
     /// The key may be any borrowed form of the cache's key type, but `Hash`
     /// and `Eq` on the borrowed form must match those for the key type.
+    #[inline]
     pub fn get_mut<Q>(&mut self, key: &Q) -> Option<&mut V>
     where
         K: Borrow<Q>,
@@ -185,6 +192,7 @@ impl<K: Eq + Hash + PartialEq, V, S: BuildHasher> LruCache<K, V, S> {
     ///
     /// The supplied key may be any borrowed form of the cache's key type, but
     /// `Hash` and `Eq` on the borrowed form must match those for the key type.
+    #[inline]
     pub fn get_key_value<Q>(&self, key: &Q) -> Option<(&K, &V)>
     where
         K: Borrow<Q>,
@@ -205,6 +213,7 @@ impl<K: Eq + Hash + PartialEq, V, S: BuildHasher> LruCache<K, V, S> {
     /// associated with the entry.
     ///
     /// [`get`]: LruCache::get
+    #[inline]
     pub fn peek<Q>(&self, key: &Q) -> Option<&V>
     where
         K: Borrow<Q>,
@@ -221,6 +230,7 @@ impl<K: Eq + Hash + PartialEq, V, S: BuildHasher> LruCache<K, V, S> {
     /// and `Eq` on the borrowed form must match those for the key type.
     ///
     /// [`get_mut`]: LruCache::get_mut
+    #[inline]
     pub fn peek_mut<Q>(&mut self, key: &Q) -> Option<&mut V>
     where
         K: Borrow<Q>,
@@ -237,6 +247,7 @@ impl<K: Eq + Hash + PartialEq, V, S: BuildHasher> LruCache<K, V, S> {
     /// `Hash` and `Eq` on the borrowed form must match those for the key type.
     ///
     /// [`get_key_value`]: LruCache::get_key_value
+    #[inline]
     pub fn peek_key_value<Q>(&self, key: &Q) -> Option<(&K, &V)>
     where
         K: Borrow<Q>,
@@ -252,6 +263,7 @@ impl<K: Eq + Hash + PartialEq, V, S: BuildHasher> LruCache<K, V, S> {
     ///
     /// The key may be any borrowed form of the cache's key type, but `Hash`
     /// and `Eq` on the borrowed form must match those for the key type.
+    #[inline]
     pub fn remove<Q>(&mut self, key: &Q) -> Option<V>
     where
         K: Borrow<Q>,
@@ -265,6 +277,7 @@ impl<K: Eq + Hash + PartialEq, V, S: BuildHasher> LruCache<K, V, S> {
     ///
     /// The key may be any borrowed form of the cache's key type, but `Hash`
     /// and `Eq` on the borrowed form must match those for the key type.
+    #[inline]
     pub fn remove_entry<Q>(&mut self, key: &Q) -> Option<(K, V)>
     where
         K: Borrow<Q>,
@@ -278,6 +291,7 @@ impl<K: Eq + Hash + PartialEq, V, S: BuildHasher> LruCache<K, V, S> {
     /// Synonym for [`remove`].
     ///
     /// [`remove`]: LruCache::remove
+    #[inline]
     pub fn pop<Q>(&mut self, key: &Q) -> Option<V>
     where
         K: Borrow<Q>,
@@ -289,6 +303,7 @@ impl<K: Eq + Hash + PartialEq, V, S: BuildHasher> LruCache<K, V, S> {
     /// Synonym for [`remove_entry`].
     ///
     /// [`remove_entry`]: LruCache::remove_entry
+    #[inline]
     pub fn pop_entry<Q>(&mut self, key: &Q) -> Option<(K, V)>
     where
         K: Borrow<Q>,
@@ -296,18 +311,23 @@ impl<K: Eq + Hash + PartialEq, V, S: BuildHasher> LruCache<K, V, S> {
     {
         self.remove_entry(key)
     }
+}
 
+impl<K, V, S> LruCache<K, V, S> {
     /// Returns the number of elements in the cache.
+    #[inline]
     pub fn len(&self) -> usize {
         self.cache.len()
     }
 
     /// Returns true if the cache contains no entries.
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.cache.is_empty()
     }
 
     /// Clears the cache, removing all key-value pairs.
+    #[inline]
     pub fn clear(&mut self) {
         self.cache.clear();
     }
@@ -316,6 +336,7 @@ impl<K: Eq + Hash + PartialEq, V, S: BuildHasher> LruCache<K, V, S> {
     /// In other words, remove all pairs `(k, v)` for which `f(&k, &mut v)`
     /// returns `false`. The elements are visited in unsorted (and unspecified)
     /// order.
+    #[inline]
     pub fn retain<F>(&mut self, mut f: F)
     where
         F: FnMut(&K, &mut V) -> bool,
@@ -331,6 +352,7 @@ impl<K: Clone + Eq + Hash + PartialEq, V: Clone, S: Default + Clone + BuildHashe
     ///
     /// Note: `&mut self` is necessary to prevent interior mutation from
     /// concurrent access while the cache is cloned.
+    #[inline]
     pub fn clone(&mut self) -> Self {
         let cache = self.cache.iter().map(|(key, (ordinal, value))| {
             let ordinal = AtomicU64::new(ordinal.load(Ordering::Relaxed));
