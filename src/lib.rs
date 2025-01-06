@@ -57,6 +57,22 @@ impl<K, V> LruCache<K, V, DefaultHashBuilder> {
 }
 
 impl<K, V, S> LruCache<K, V, S> {
+    #[inline]
+    pub fn with_capacity_and_hasher(capacity: usize, hasher: S) -> Self {
+        Self {
+            cache: HashMap::with_capacity_and_hasher(capacity.saturating_mul(2), hasher),
+            counter: AtomicU64::default(),
+            capacity,
+        }
+    }
+
+    #[inline]
+    pub fn hasher(&self) -> &S {
+        self.cache.hasher()
+    }
+}
+
+impl<K, V, S> LruCache<K, V, S> {
     /// An iterator visiting all key-value pairs in arbitrary order.
     /// The iterator element type is `(&'a K, &'a V)`.
     pub fn iter(&self) -> Iter<'_, K, V> {
