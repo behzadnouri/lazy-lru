@@ -345,7 +345,7 @@ impl<K, V, S> LruCache<K, V, S> {
     }
 }
 
-impl<K: Clone + Eq + Hash + PartialEq, V: Clone, S: Default + Clone + BuildHasher>
+impl<K: Clone + Eq + Hash + PartialEq, V: Clone, S: Clone + BuildHasher>
     LruCache<K, V, S>
 {
     /// Clones the `LruCache`.
@@ -354,12 +354,14 @@ impl<K: Clone + Eq + Hash + PartialEq, V: Clone, S: Default + Clone + BuildHashe
     /// concurrent access while the cache is cloned.
     #[inline]
     pub fn clone(&mut self) -> Self {
-        let cache = self.cache.iter().map(|(key, (ordinal, value))| {
+        let mut cache =
+            HashMap::with_capacity_and_hasher(self.cache.capacity(), self.cache.hasher().clone());
+        cache.extend(self.cache.iter().map(|(key, (ordinal, value))| {
             let ordinal = AtomicU64::new(ordinal.load(Ordering::Relaxed));
             (key.clone(), (ordinal, value.clone()))
-        });
+        }));
         Self {
-            cache: cache.collect(),
+            cache,
             counter: AtomicU64::new(self.counter.load(Ordering::Relaxed)),
             ..*self
         }
@@ -510,14 +512,14 @@ mod tests {
         test_case::test_case,
     };
 
-    fn check_entry<K, V, S: BuildHasher, Q: ?Sized>(
+    fn check_entry<K, V, S: BuildHasher, Q>(
         cache: &LruCache<K, V, S>,
         key: &Q,
         ordinal: u64,
         value: V,
     ) where
         K: Hash + Eq + Borrow<Q>,
-        Q: Hash + Eq,
+        Q: Hash + Eq + ?Sized,
         V: Debug + PartialEq<V>,
     {
         let (entry_ordinal, entry_value) = cache.cache.get(key).unwrap();
