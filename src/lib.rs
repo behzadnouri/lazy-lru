@@ -4,11 +4,11 @@ use {
     core::{
         borrow::Borrow,
         cmp::Reverse,
-        hash::Hash,
+        hash::{BuildHasher, Hash},
         iter::FusedIterator,
         sync::atomic::{AtomicU64, Ordering},
     },
-    hashbrown::HashMap,
+    hashbrown::{DefaultHashBuilder, HashMap},
 };
 
 extern crate alloc;
@@ -20,8 +20,8 @@ extern crate alloc;
 /// are evicted based on LRU policy resulting in an _amortized_ `O(1)`
 /// performance.
 #[derive(Debug)]
-pub struct LruCache<K, V> {
-    cache: HashMap<K, (/*ordinal:*/ AtomicU64, V)>,
+pub struct LruCache<K, V, S = DefaultHashBuilder> {
+    cache: HashMap<K, (/*ordinal:*/ AtomicU64, V), S>,
     counter: AtomicU64,
     capacity: usize,
 }
@@ -46,15 +46,17 @@ pub struct IterMut<'a, K: 'a, V: 'a>(hashbrown::hash_map::IterMut<'a, K, (Atomic
 /// [`into_iter`]: IntoIterator::into_iter
 pub struct IntoIter<K, V>(hashbrown::hash_map::IntoIter<K, (AtomicU64, V)>);
 
-impl<K, V> LruCache<K, V> {
-    pub fn new(capacity: usize) -> LruCache<K, V> {
+impl<K, V> LruCache<K, V, DefaultHashBuilder> {
+    pub fn new(capacity: usize) -> Self {
         Self {
             cache: HashMap::with_capacity(capacity.saturating_mul(2)),
             counter: AtomicU64::default(),
             capacity,
         }
     }
+}
 
+impl<K, V, S> LruCache<K, V, S> {
     /// An iterator visiting all key-value pairs in arbitrary order.
     /// The iterator element type is `(&'a K, &'a V)`.
     pub fn iter(&self) -> Iter<'_, K, V> {
@@ -69,7 +71,7 @@ impl<K, V> LruCache<K, V> {
     }
 }
 
-impl<K: Eq + Hash + PartialEq, V> LruCache<K, V> {
+impl<K: Eq + Hash + PartialEq, V, S: BuildHasher> LruCache<K, V, S> {
     /// Inserts a key-value pair into the cache.
     /// If the cache not have this key present, None is returned.
     /// If the cache did have this key present, the value is updated, and the
@@ -306,7 +308,9 @@ impl<K: Eq + Hash + PartialEq, V> LruCache<K, V> {
     }
 }
 
-impl<K: Clone + Eq + Hash + PartialEq, V: Clone> LruCache<K, V> {
+impl<K: Clone + Eq + Hash + PartialEq, V: Clone, S: Default + Clone + BuildHasher>
+    LruCache<K, V, S>
+{
     /// Clones the `LruCache`.
     ///
     /// Note: `&mut self` is necessary to prevent interior mutation from
@@ -324,7 +328,7 @@ impl<K: Clone + Eq + Hash + PartialEq, V: Clone> LruCache<K, V> {
     }
 }
 
-impl<'a, K, V> IntoIterator for &'a LruCache<K, V> {
+impl<'a, K, V, S> IntoIterator for &'a LruCache<K, V, S> {
     type Item = (&'a K, &'a V);
     type IntoIter = Iter<'a, K, V>;
 
@@ -334,7 +338,7 @@ impl<'a, K, V> IntoIterator for &'a LruCache<K, V> {
     }
 }
 
-impl<'a, K, V> IntoIterator for &'a mut LruCache<K, V> {
+impl<'a, K, V, S> IntoIterator for &'a mut LruCache<K, V, S> {
     type Item = (&'a K, &'a mut V);
     type IntoIter = IterMut<'a, K, V>;
 
@@ -344,7 +348,7 @@ impl<'a, K, V> IntoIterator for &'a mut LruCache<K, V> {
     }
 }
 
-impl<K, V> IntoIterator for LruCache<K, V> {
+impl<K, V, S> IntoIterator for LruCache<K, V, S> {
     type Item = (K, V);
     type IntoIter = IntoIter<K, V>;
 
@@ -468,8 +472,12 @@ mod tests {
         test_case::test_case,
     };
 
-    fn check_entry<K, V, Q: ?Sized>(cache: &LruCache<K, V>, key: &Q, ordinal: u64, value: V)
-    where
+    fn check_entry<K, V, S: BuildHasher, Q: ?Sized>(
+        cache: &LruCache<K, V, S>,
+        key: &Q,
+        ordinal: u64,
+        value: V,
+    ) where
         K: Hash + Eq + Borrow<Q>,
         Q: Hash + Eq,
         V: Debug + PartialEq<V>,
