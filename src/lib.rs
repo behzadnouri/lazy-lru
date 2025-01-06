@@ -505,6 +505,7 @@ impl<K, V> FusedIterator for IntoIter<K, V> {}
 mod tests {
     use {
         super::*,
+        ahash::RandomState as AHashRandomState,
         core::{fmt::Debug, num::NonZeroUsize},
         rand::Rng,
         test_case::test_case,
@@ -534,9 +535,20 @@ mod tests {
         assert_eq!(cache.get("apple"), None);
     }
 
-    #[test]
-    fn test_basics() {
-        let mut cache = LruCache::new(2);
+    #[test_case(DefaultHashBuilder::default())]
+    #[test_case(AHashRandomState::default())]
+    fn test_capacity_zero_with_hasher<S: BuildHasher>(hasher: S) {
+        let mut cache = LruCache::with_capacity_and_hasher(0, hasher);
+
+        cache.put("apple", 8);
+        assert_eq!(cache.len(), 0);
+        assert_eq!(cache.get("apple"), None);
+    }
+
+    #[test_case(DefaultHashBuilder::default())]
+    #[test_case(AHashRandomState::default())]
+    fn test_basics<S: BuildHasher>(hasher: S) {
+        let mut cache = LruCache::with_capacity_and_hasher(2, hasher);
 
         cache.put("apple", 8);
         assert_eq!(cache.len(), 1);
@@ -595,17 +607,29 @@ mod tests {
         assert!(cache.is_empty());
     }
 
-    #[test_case(10, 10)]
-    #[test_case(10, 100)]
-    #[test_case(10, 1_000)]
-    #[test_case(10, 10_000)]
-    #[test_case(100, 10)]
-    #[test_case(100, 100)]
-    #[test_case(100, 1_000)]
-    #[test_case(100, 10_000)]
-    fn test_lru_cache_cross_check_subset(capacity: usize, num_keys: usize) {
+    #[test_case(10, 10, DefaultHashBuilder::default())]
+    #[test_case(10, 100, DefaultHashBuilder::default())]
+    #[test_case(10, 1_000, DefaultHashBuilder::default())]
+    #[test_case(10, 10_000, DefaultHashBuilder::default())]
+    #[test_case(100, 10, DefaultHashBuilder::default())]
+    #[test_case(100, 100, DefaultHashBuilder::default())]
+    #[test_case(100, 1_000, DefaultHashBuilder::default())]
+    #[test_case(100, 10_000, DefaultHashBuilder::default())]
+    #[test_case(10, 10, AHashRandomState::default())]
+    #[test_case(10, 100, AHashRandomState::default())]
+    #[test_case(10, 1_000, AHashRandomState::default())]
+    #[test_case(10, 10_000, AHashRandomState::default())]
+    #[test_case(100, 10, AHashRandomState::default())]
+    #[test_case(100, 100, AHashRandomState::default())]
+    #[test_case(100, 1_000, AHashRandomState::default())]
+    #[test_case(100, 10_000, AHashRandomState::default())]
+    fn test_lru_cache_cross_check_subset<S: BuildHasher>(
+        capacity: usize,
+        num_keys: usize,
+        hasher: S,
+    ) {
         let mut rng = rand::thread_rng();
-        let mut cache = LruCache::<usize, u8>::new(capacity);
+        let mut cache = LruCache::<usize, u8, S>::with_capacity_and_hasher(capacity, hasher);
         let mut other = lru::LruCache::<usize, u8>::new(NonZeroUsize::new(capacity).unwrap());
         for _ in 0..10_000_000 {
             let key: usize = rng.gen_range(0..num_keys);
@@ -620,17 +644,29 @@ mod tests {
         }
     }
 
-    #[test_case(10, 10)]
-    #[test_case(10, 100)]
-    #[test_case(10, 1_000)]
-    #[test_case(10, 10_000)]
-    #[test_case(100, 10)]
-    #[test_case(100, 100)]
-    #[test_case(100, 1_000)]
-    #[test_case(100, 10_000)]
-    fn test_lru_cache_cross_check_superset(capacity: usize, num_keys: usize) {
+    #[test_case(10, 10, DefaultHashBuilder::default())]
+    #[test_case(10, 100, DefaultHashBuilder::default())]
+    #[test_case(10, 1_000, DefaultHashBuilder::default())]
+    #[test_case(10, 10_000, DefaultHashBuilder::default())]
+    #[test_case(100, 10, DefaultHashBuilder::default())]
+    #[test_case(100, 100, DefaultHashBuilder::default())]
+    #[test_case(100, 1_000, DefaultHashBuilder::default())]
+    #[test_case(100, 10_000, DefaultHashBuilder::default())]
+    #[test_case(10, 10, AHashRandomState::default())]
+    #[test_case(10, 100, AHashRandomState::default())]
+    #[test_case(10, 1_000, AHashRandomState::default())]
+    #[test_case(10, 10_000, AHashRandomState::default())]
+    #[test_case(100, 10, AHashRandomState::default())]
+    #[test_case(100, 100, AHashRandomState::default())]
+    #[test_case(100, 1_000, AHashRandomState::default())]
+    #[test_case(100, 10_000, AHashRandomState::default())]
+    fn test_lru_cache_cross_check_superset<S: BuildHasher>(
+        capacity: usize,
+        num_keys: usize,
+        hasher: S,
+    ) {
         let mut rng = rand::thread_rng();
-        let mut cache = LruCache::<usize, u8>::new(capacity);
+        let mut cache = LruCache::<usize, u8, S>::with_capacity_and_hasher(capacity, hasher);
         let mut other = lru::LruCache::<usize, u8>::new(NonZeroUsize::new(2 * capacity).unwrap());
         for _ in 0..10_000_000 {
             let key: usize = rng.gen_range(0..num_keys);
