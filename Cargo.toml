@@ -13,10 +13,10 @@ license = "MIT"
 keywords = ["LRU", "cache"]
 
 [dependencies]
-hashbrown = { version = "0.14.3" }
+hashbrown = { version = "0.15.2" }
 
 [dev-dependencies]
-lru = "0.12.3"
+lru = "0.12.5"
 rand = "0.8.5"
 test-case = "3.3.1"
 
