@@ -345,9 +345,7 @@ impl<K, V, S> LruCache<K, V, S> {
     }
 }
 
-impl<K: Clone + Eq + Hash + PartialEq, V: Clone, S: Clone + BuildHasher>
-    LruCache<K, V, S>
-{
+impl<K: Clone + Eq + Hash + PartialEq, V: Clone, S: Clone + BuildHasher> LruCache<K, V, S> {
     /// Clones the `LruCache`.
     ///
     /// Note: `&mut self` is necessary to prevent interior mutation from

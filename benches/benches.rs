@@ -1,5 +1,6 @@
 #![feature(test)]
 
+extern crate ahash;
 extern crate core;
 extern crate lazy_lru;
 extern crate lru;
@@ -52,9 +53,11 @@ macro_rules! impl_get_bench {
 
 impl_put_bench!(run_put_bench_eager, lru::LruCache<usize, ()>);
 impl_put_bench!(run_put_bench_lazy, lazy_lru::LruCache<usize, ()>);
+impl_put_bench!(run_put_bench_lazy_ahash, lazy_lru::LruCache<usize, (), ahash::RandomState>);
 
 impl_get_bench!(run_get_bench_eager, lru::LruCache<usize, ()>);
 impl_get_bench!(run_get_bench_lazy, lazy_lru::LruCache<usize, ()>);
+impl_get_bench!(run_get_bench_lazy_ahash, lazy_lru::LruCache<usize, (), ahash::RandomState>);
 
 #[bench]
 fn bench_put_eager(bencher: &mut Bencher) {
@@ -69,6 +72,13 @@ fn bench_put_lazy(bencher: &mut Bencher) {
 }
 
 #[bench]
+fn bench_put_lazy_ahash(bencher: &mut Bencher) {
+    let random_state = ahash::RandomState::new();
+    let cache = lazy_lru::LruCache::with_capacity_and_hasher(CAPACITY, random_state);
+    run_put_bench_lazy_ahash(bencher, cache, NUM_KEYS, REPS);
+}
+
+#[bench]
 fn bench_get_eager(bencher: &mut Bencher) {
     let cache = lru::LruCache::new(NonZeroUsize::new(CAPACITY).unwrap());
     run_get_bench_eager(bencher, cache, NUM_KEYS, REPS);
@@ -78,4 +88,11 @@ fn bench_get_eager(bencher: &mut Bencher) {
 fn bench_get_lazy(bencher: &mut Bencher) {
     let cache = lazy_lru::LruCache::new(CAPACITY);
     run_get_bench_lazy(bencher, cache, NUM_KEYS, REPS);
+}
+
+#[bench]
+fn bench_get_lazy_ahash(bencher: &mut Bencher) {
+    let random_state = ahash::RandomState::new();
+    let cache = lazy_lru::LruCache::with_capacity_and_hasher(CAPACITY, random_state);
+    run_get_bench_lazy_ahash(bencher, cache, NUM_KEYS, REPS);
 }
